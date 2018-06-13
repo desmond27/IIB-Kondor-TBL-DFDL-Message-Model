@@ -1,0 +1,84 @@
+BROKER SCHEMA MFL_KONDOR_MSGS
+
+
+CREATE COMPUTE MODULE SF_KONDOR_TEXT2XML_KONDOR_TEXT2XML
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		-- CALL CopyMessageHeaders();
+		-- CALL CopyEntireMessage();
+		CREATE LASTCHILD OF OutputRoot DOMAIN('XMLNSC');
+		-- SET OutputRoot.XMLNSC.KONDOR_TBL = InputRoot.DFDL.KONDOR_TBL; 
+		CREATE LASTCHILD OF OutputRoot.XMLNSC NAME('KONDOR_TBL');
+		
+		DECLARE NvpsCount INTEGER CARDINALITY(InputRoot.DFDL.KONDOR_TBL.NVPS[]);
+		DECLARE i INTEGER 1;
+		
+		-- For non-grouped fields
+		WHILE i <= NvpsCount DO
+			DECLARE NvpCount INTEGER CARDINALITY(InputRoot.DFDL.KONDOR_TBL.NVPS[i].NVP[]);
+			DECLARE j INTEGER 1;
+			WHILE j <= NvpCount DO
+				CREATE LASTCHILD OF OutputRoot.XMLNSC.KONDOR_TBL NAME (InputRoot.DFDL.KONDOR_TBL.NVPS[i].NVP[j].NAME);
+				SET OutputRoot.XMLNSC.KONDOR_TBL.{InputRoot.DFDL.KONDOR_TBL.NVPS[i].NVP[j].NAME} = REPLACE(InputRoot.DFDL.KONDOR_TBL.NVPS[i].NVP[j].VALUE, '"', '');
+				SET j = j + 1;
+			END WHILE;
+			SET i = i + 1;
+		END WHILE; 
+		
+		-- For TBL fields
+		DECLARE tblCount INTEGER CARDINALITY(InputRoot.DFDL.KONDOR_TBL.TBL[]);
+		SET i = 1;
+		WHILE i <= tblCount DO
+			DECLARE tblFieldCount INTEGER CARDINALITY(InputRoot.DFDL.KONDOR_TBL.TBL[i].FIELD[]);
+			DECLARE j INTEGER 1;
+			SET j = 1;
+			CREATE LASTCHILD OF OutputRoot.XMLNSC.KONDOR_TBL NAME(InputRoot.DFDL.KONDOR_TBL.TBL[i].NAME);
+			WHILE j <= tblFieldCount DO
+				CREATE LASTCHILD OF OutputRoot.XMLNSC.KONDOR_TBL.{InputRoot.DFDL.KONDOR_TBL.TBL[i].NAME} NAME(InputRoot.DFDL.KONDOR_TBL.TBL[i].FIELD[j].NAME);
+				SET OutputRoot.XMLNSC.KONDOR_TBL.{InputRoot.DFDL.KONDOR_TBL.TBL[i].NAME}.{InputRoot.DFDL.KONDOR_TBL.TBL[i].FIELD[j].NAME} = REPLACE(InputRoot.DFDL.KONDOR_TBL.TBL[i].FIELD[j].VALUE, '"', ''); 
+				SET j = j + 1;
+			END WHILE;
+			SET i = i + 1;
+		END WHILE;
+		
+		-- Sanitize
+		-- Replace 360T with T360 because XML tags cannot start with numbers. This should be a non-issue if the XML is read within IIB itself.
+--		CREATE NEXTSIBLING OF OutputRoot.XMLNSC.KONDOR_TBL.UsersCodes."360T" NAME('T360');
+--		SET OutputRoot.XMLNSC.KONDOR_TBL.UsersCodes.T360 = OutputRoot.XMLNSC.KONDOR_TBL.UsersCodes."360T";
+--		SET OutputRoot.XMLNSC.KONDOR_TBL.UsersCodes."360T" = NULL;
+		
+		-- Populate system config details into the Environment.
+		-- Query system config details
+		DECLARE SystemConfigQuery CHARACTER 'SELECT * FROM SYSTEM_CONFIG_DTL WHERE SYSTEM_NAME = ''KONDOR''';
+		SET Environment.SystemConfig[] = PASSTHRU(SystemConfigQuery);
+		
+		-- Log the message
+		-- Logging fields: InterfaceCode, ApplicationCode, ProcessId, ServiceName, SourceName, TargetName, LogSummary, Payload, AuditTime, CreatedBy, ModifiedBy, Status 
+		--SET Environment.Variables.InterfaceCode = 'BIB_IF_0024';
+		SET Environment.Variables.ApplicationCode = 'SR018';
+		SET Environment.Variables.MessageId = UUIDASCHAR;
+		--SET Environment.Variables.ServiceName = 'SMSMobiliaUPCancel';
+		SET Environment.Variables.SourceName = Environment.SystemConfig.SYSTEM_NAME;
+		SET Environment.Variables.TargetName = 'FCUBS';
+		--SET Environment.Variables.LogSummary = 'Request Received from SMSMOBILIA';
+		--SET Environment.Variables.PayLoad = COALESCE(InputRoot.HTTPInputHeader."X-Query-String", '');
+		--SET Environment.Variables.AuditTime = '';
+		SET Environment.Variables.UserId = Environment.SystemConfig.APPLICATION_USER;
+		
+		RETURN TRUE;
+	END;
+
+	CREATE PROCEDURE CopyMessageHeaders() BEGIN
+		DECLARE I INTEGER 1;
+		DECLARE J INTEGER;
+		SET J = CARDINALITY(InputRoot.*[]);
+		WHILE I < J DO
+			SET OutputRoot.*[I] = InputRoot.*[I];
+			SET I = I + 1;
+		END WHILE;
+	END;
+
+	CREATE PROCEDURE CopyEntireMessage() BEGIN
+		SET OutputRoot = InputRoot;
+	END;
+END MODULE;

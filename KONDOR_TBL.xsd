@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:dfdl="http://www.ogf.org/dfdl/dfdl-1.0/" xmlns:fmt="http://www.ibm.com/dfdl/GeneralPurposeFormat" xmlns:fn="http://www.w3.org/2005/xpath-functions" xmlns:ibmSchExtn="http://www.ibm.com/schema/extensions">
+	
+	
+
+    <xsd:import namespace="http://www.ibm.com/dfdl/GeneralPurposeFormat" schemaLocation="IBMdefined/GeneralPurposeFormat.xsd"/>
+        <xsd:element dfdl:initiator="" dfdl:lengthKind="delimited" dfdl:terminator="" ibmSchExtn:docRoot="true" name="KONDOR_TBL">
+            <xsd:annotation>
+      <xsd:documentation>Message model for Kondor database dump file format.&#13;
+Created by Desmond David.</xsd:documentation>
+    </xsd:annotation>
+        <xsd:complexType>
+      <xsd:sequence dfdl:initiator="" dfdl:separator="" dfdl:sequenceKind="ordered" dfdl:terminator="">
+        <xsd:element dfdl:initiator="#%SP;FILE%SP;" dfdl:lengthKind="delimited" dfdl:terminator="%LF;%WSP*;" name="FileHeader" type="xsd:string"/>
+        <xsd:element dfdl:occursCountKind="implicit" dfdl:terminator="%WSP;%NL;" maxOccurs="unbounded" name="NVPS">
+          <xsd:complexType>
+            <xsd:sequence dfdl:separator="" dfdl:separatorSuppressionPolicy="anyEmpty">
+              <xsd:element dfdl:emptyValueDelimiterPolicy="terminator" dfdl:initiator="" dfdl:occursCountKind="implicit" dfdl:terminator="%NL;" maxOccurs="unbounded" name="NVP">
+                <xsd:complexType>
+                  <xsd:sequence dfdl:separator="%SP;" dfdl:terminator="">
+                    <xsd:element dfdl:emptyValueDelimiterPolicy="terminator" dfdl:nilKind="logicalValue" dfdl:nilValue="%WSP*;" name="NAME" nillable="true" type="xsd:string"/>
+                    <xsd:element dfdl:emptyValueDelimiterPolicy="terminator" dfdl:terminator="" name="VALUE" nillable="false" type="xsd:string"/>
+                  </xsd:sequence>
+                </xsd:complexType>
+              </xsd:element>
+            </xsd:sequence>
+          </xsd:complexType>
+        </xsd:element>
+        <xsd:element dfdl:initiator="TBL%SP;" dfdl:occursCountKind="implicit" dfdl:terminator="EOT%WSP*;" maxOccurs="unbounded" name="TBL">
+          <xsd:complexType>
+            <xsd:sequence dfdl:separator="" dfdl:separatorPosition="postfix" dfdl:separatorSuppressionPolicy="anyEmpty">
+              <xsd:element dfdl:terminator="%NL;" name="NAME" type="xsd:string"/>
+              <xsd:element dfdl:occursCountKind="implicit" dfdl:terminator="" maxOccurs="unbounded" name="FIELD">
+                <xsd:complexType>
+                  <xsd:sequence dfdl:separator="" dfdl:terminator="">
+                    <xsd:element dfdl:terminator="%SP;" name="NAME" type="xsd:string"/>
+                    <xsd:element dfdl:terminator="%NL;" name="VALUE" type="xsd:string"/>
+                  </xsd:sequence>
+                </xsd:complexType>
+              </xsd:element>
+            </xsd:sequence>
+          </xsd:complexType>
+        </xsd:element>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+    <xsd:annotation>
+		<xsd:appinfo source="http://www.ogf.org/dfdl/">
+			<dfdl:format encoding="{$dfdl:encoding}" escapeSchemeRef="" ref="fmt:GeneralPurposeFormat"/>
+		</xsd:appinfo>
+	</xsd:annotation>
+	
+
+</xsd:schema>
